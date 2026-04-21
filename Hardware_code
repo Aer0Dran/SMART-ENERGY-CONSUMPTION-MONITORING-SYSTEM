@@ -1,0 +1,142 @@
+// ----------- BLYNK CONFIG -----------
+#define BLYNK_TEMPLATE_ID "TMPL3j_vV42SQ"
+#define BLYNK_TEMPLATE_NAME "EnergyMonitor"
+#define BLYNK_AUTH_TOKEN "x_7YwzI3i9MhfPMywr7iPn0iBGO_DhwQ"
+
+#include <WiFi.h>
+#include <BlynkSimpleEsp32.h>
+#include <PZEM004Tv30.h>
+#include <HardwareSerial.h>
+#include <Wire.h>
+#include <U8g2lib.h>
+
+// ----------- WIFI -----------
+char ssid[] = "Anushka";
+char pass[] = "aros9058";
+
+// ----------- OLED CONFIG -----------
+U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
+
+// ----------- PZEM CONFIG -----------
+HardwareSerial mySerial(2);
+PZEM004Tv30 pzem(mySerial, 16, 17);
+
+// ----------- VARIABLES -----------
+float voltage, current, power, energy, frequency;
+
+BlynkTimer timer;
+
+// ----------- READ SENSOR -----------
+void readPZEM() {
+  voltage = pzem.voltage();
+  current = pzem.current();
+  power = pzem.power();
+  energy = pzem.energy();
+  frequency = pzem.frequency();
+
+  Serial.println("------ SENSOR DATA ------");
+
+  Serial.print("Voltage: "); Serial.println(voltage);
+  Serial.print("Current: "); Serial.println(current);
+  Serial.print("Power: "); Serial.println(power);
+  Serial.print("Energy: "); Serial.println(energy);
+  Serial.print("Frequency: "); Serial.println(frequency);
+
+  if (!isnan(voltage)) Blynk.virtualWrite(V0, voltage);
+  if (!isnan(current)) Blynk.virtualWrite(V1, current);
+  if (!isnan(power)) Blynk.virtualWrite(V2, power);
+  if (!isnan(energy)) Blynk.virtualWrite(V3, energy);
+  if (!isnan(frequency)) Blynk.virtualWrite(V4, frequency);
+}
+
+// ----------- OLED DISPLAY -----------
+void updateDisplay() {
+  u8g2.clearBuffer();
+  u8g2.setFont(u8g2_font_6x10_tr);
+
+  // If no valid power
+  if (isnan(voltage) || voltage < 10) {
+    u8g2.setCursor(20, 30);
+    u8g2.print("NO POWER");
+  } else {
+    // Top row
+    u8g2.setCursor(0, 10);
+    u8g2.print("V:");
+    u8g2.print(voltage, 1);
+
+    u8g2.setCursor(70, 10);
+    u8g2.print("I:");
+    u8g2.print(current, 2);
+
+    // Middle row
+    u8g2.setCursor(0, 30);
+    u8g2.print("P:");
+    u8g2.print(power, 1);
+
+    u8g2.setCursor(70, 30);
+    u8g2.print("F:");
+    u8g2.print(frequency, 1);
+
+    // Bottom row
+    u8g2.setCursor(0, 55);
+    u8g2.print("E:");
+    u8g2.print(energy, 3);
+  }
+
+  u8g2.sendBuffer();
+}
+
+// ----------- SETUP -----------
+void setup() {
+  Serial.begin(115200);
+  delay(2000);
+
+  Serial.println("===== SYSTEM BOOT =====");
+
+  // -------- OLED INIT --------
+  Wire.begin(21, 22);
+  Serial.println("Initializing OLED...");
+  u8g2.begin();
+  Serial.println("✅ OLED OK");
+
+  // -------- WIFI CONNECT --------
+  Serial.println("Connecting to WiFi...");
+  WiFi.begin(ssid, pass);
+
+  unsigned long startAttemptTime = millis();
+
+  while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 10000) {
+    Serial.print(".");
+    delay(500);
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\n✅ WiFi Connected!");
+    Serial.print("IP: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("\n❌ WiFi Failed");
+  }
+
+  // -------- BLYNK CONNECT --------
+  Serial.println("Connecting to Blynk...");
+  Blynk.config(BLYNK_AUTH_TOKEN);
+
+  if (Blynk.connect(5000)) {
+    Serial.println("✅ Blynk Connected!");
+  } else {
+    Serial.println("❌ Blynk Failed to Connect");
+  }
+
+  // -------- TIMERS --------
+  timer.setInterval(2000L, readPZEM);
+  timer.setInterval(1000L, updateDisplay);
+
+  Serial.println("===== SYSTEM READY =====");
+}
+
+// ----------- LOOP -----------
+void loop() {
+  Blynk.run();
+  timer.run();
+}
