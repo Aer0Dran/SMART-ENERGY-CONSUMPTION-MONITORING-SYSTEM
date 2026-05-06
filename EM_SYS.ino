@@ -1,7 +1,7 @@
 // ----------- BLYNK CONFIG -----------
-#define BLYNK_TEMPLATE_ID "TMPL3j_vV42SQ"
-#define BLYNK_TEMPLATE_NAME "EnergyMonitor"
-#define BLYNK_AUTH_TOKEN "x_7YwzI3i9MhfPMywr7iPn0iBGO_DhwQ"
+#define BLYNK_TEMPLATE_ID "YOUR_TEMPLATE_ID"
+#define BLYNK_TEMPLATE_NAME "YOUR_TEMPLATE_NAME"
+#define BLYNK_AUTH_TOKEN "YOUR_AUTH TOKEN"
 
 #include <WiFi.h>
 #include <BlynkSimpleEsp32.h>
@@ -16,8 +16,8 @@
 
 int screenIndex = 0;
 // ----------- WIFI -----------
-char ssid[] = "Redmi 13C 5G";
-char pass[] = "Aer0Dr@n01";
+char ssid[] = "YOUR_SSID";
+char pass[] = "YOUR_PASSWORD";
 
 // ----------- OLED CONFIG -----------
 Adafruit_SH1106G display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
